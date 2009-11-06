@@ -1,6 +1,6 @@
 extensions [ array table sound ]
 
-globals [ two-pi pi-over-two over-pi oscillator-count rest-ratio flashing-color resting-color ]
+globals [ two-pi pi-over-two over-pi over-half oscillator-count rest-ratio flashing-color resting-color ]
 breed [ oscillators oscillator ]
 oscillators-own [ period phase flashing ]
 
@@ -10,18 +10,44 @@ to initialize-variables
   set two-pi 2 * pi
   set pi-over-two pi * 0.5
   set over-pi 1.0 / pi
+  set over-half 1.0 / 180
   set oscillator-count 111
   set rest-ratio 0.5
   set flashing-color 45
   set resting-color 1
 end
 
+to-report to-degrees [ theta ]
+  report (theta * over-pi * 180)
+end
+
+to-report to-radians [ theta ]
+  report (theta * pi * over-half)
+end
+
+to-report orient-theta [ theta ]
+  let rtheta theta mod two-pi
+  ifelse rtheta > pi 
+    [ report rtheta - two-pi ]
+    [ report rtheta ]
+end
+
 to-report sinr [ theta ]
-  report sin (theta * over-pi * 360)
+  report sin to-degrees theta
 end
 
 to-report cosr [ theta ]
-  report cos (theta * over-pi * 360)
+  report cos to-degrees theta
+end
+
+to-report tanr [ theta ]
+  report tan to-degrees theta
+end
+
+to-report atanr [ x y ]
+  ifelse x = 0 and y = 0
+    [ report 0 ]
+    [ report to-radians atan y x ]
 end
 
 to-report random-period
@@ -37,34 +63,27 @@ end
 to flash
   set color flashing-color
   let self-phase phase
+  let x-component 0
+  let y-component 0
 
-;;   let total 0
-;;   let total-flashing 0
+  ask other oscillators in-radius sight-radius [
+    let phase-difference phase - self-phase
+    set x-component (x-component + cosr phase-difference)
+    set y-component (y-component + sinr phase-difference)
+  ]
 
-;;   ask oscillators in-radius sight-radius [
-;;     set total (total + 1)
-;;     if flashing? [ 
-;;       set total-flashing (total-flashing + 1) 
-;;     ]
-;;   ]
+  let magnitude (x-component ^ 2) + (y-component ^ 2)
+  let theta atanr x-component y-component
+  let adjustment (orient-theta (phase - theta)) * magnitude
 
-;;   if flashing? and total-flashing / total < satisfaction-threshhold [
-;;     adjust-period flash-alone-adjustment
-;;   ]
+  adjust-period adjustment * flash-alone-adjustment
 
-  ask oscillators in-radius sight-radius [ see-flash self-phase ]
+;;   ask other oscillators in-radius sight-radius [ see-flash self-phase ]
 end
 
 to see-flash [ flash-phase ]
   let difference sinr (phase - flash-phase)
   adjust-period difference
-
-
-;;   if not flashing? [ 
-;;     ifelse resting? 
-;;       [ adjust-period see-flash-adjustment ]
-;;       [ adjust-period (-1 * see-flash-adjustment) ]
-;;   ]
 end
 
 to-report phase-increment
@@ -285,7 +304,7 @@ sight-radius
 sight-radius
 0
 40
-5
+3
 1
 1
 NIL
