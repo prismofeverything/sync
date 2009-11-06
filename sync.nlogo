@@ -54,14 +54,17 @@ to-report random-period
   report (random-float 100) + 10
 end
 
+to-report number-flashing
+  report count oscillators with [ flashing? ]
+end
+
 to adjust-period [ adjustment ]
   if adjustment > 0 or period > 10 [
     set period (period + adjustment)
   ]
 end
 
-to flash
-  set color flashing-color
+to tune-phase
   let self-phase phase
   let x-component 0
   let y-component 0
@@ -77,6 +80,11 @@ to flash
   let adjustment (orient-theta (phase - theta)) * magnitude
 
   adjust-period adjustment * flash-alone-adjustment
+end
+
+to flash
+  set color flashing-color
+;;   tune-phase
 
 ;;   ask other oscillators in-radius sight-radius [ see-flash self-phase ]
 end
@@ -119,6 +127,7 @@ end
 to cycle
   phase-step
   find-color
+  tune-phase
 
   if xcor = mouse-xcor and ycor = mouse-ycor [
     show period
@@ -150,6 +159,7 @@ end
 
 to go
   cycle-oscillators
+  plot number-flashing
 end
 
 
@@ -228,7 +238,7 @@ ticks
 CC-WINDOW
 5
 533
-1235
+1238
 628
 Command Center
 0
@@ -349,17 +359,17 @@ flash-alone-adjustment
 flash-alone-adjustment
 -1
 1
-0.1
+0.01
 0.01
 1
 NIL
 HORIZONTAL
 
 MONITOR
-914
-147
-1203
-192
+880
+56
+1169
+101
 NIL
 [ period ] of min-one-of oscillators [ period ]
 17
@@ -398,6 +408,23 @@ NIL
 17
 1
 11
+
+PLOT
+885
+136
+1229
+321
+flashing together
+time
+flashing
+0.0
+10.0
+0.0
+200.0
+true
+false
+PENS
+"default" 1.0 0 -16777216 true
 
 @#$#@#$#@
 WHAT IS IT?
