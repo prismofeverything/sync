@@ -1,14 +1,27 @@
 extensions [ array table sound ]
 
-globals [ oscillator-count rest-ratio flashing-color resting-color ]
+globals [ two-pi pi-over-two over-pi oscillator-count rest-ratio flashing-color resting-color ]
 breed [ oscillators oscillator ]
 oscillators-own [ period phase flashing ]
 
+;; sliders [ phase-velocity flash-ratio sight-radius satisfaction-threshhold see-flash-adjustment flash-alone-adjustment ]
+
 to initialize-variables
+  set two-pi 2 * pi
+  set pi-over-two pi * 0.5
+  set over-pi 1.0 / pi
   set oscillator-count 111
   set rest-ratio 0.5
   set flashing-color 45
   set resting-color 1
+end
+
+to-report sinr [ theta ]
+  report sin (theta * over-pi * 360)
+end
+
+to-report cosr [ theta ]
+  report cos (theta * over-pi * 360)
 end
 
 to-report random-period
@@ -16,39 +29,58 @@ to-report random-period
 end
 
 to adjust-period [ adjustment ]
-  set period (period + adjustment)
+  if adjustment > 0 or period > 10 [
+    set period (period + adjustment)
+  ]
 end
 
 to flash
   set color flashing-color
+  let self-phase phase
 
-  let total 0
-  let total-flashing 0
+;;   let total 0
+;;   let total-flashing 0
 
-  ask oscillators in-radius sight-radius [
-    set total (total + 1)
-    if flashing? [ 
-      set total-flashing (total-flashing + 1) 
-    ]
-  ]
+;;   ask oscillators in-radius sight-radius [
+;;     set total (total + 1)
+;;     if flashing? [ 
+;;       set total-flashing (total-flashing + 1) 
+;;     ]
+;;   ]
 
-  if flashing? and total-flashing / total < satisfaction-threshhold [
-    adjust-period flash-alone-adjustment
-  ]
+;;   if flashing? and total-flashing / total < satisfaction-threshhold [
+;;     adjust-period flash-alone-adjustment
+;;   ]
 
-  ask oscillators in-radius sight-radius [ see-flash ]
+  ask oscillators in-radius sight-radius [ see-flash self-phase ]
+end
+
+to see-flash [ flash-phase ]
+  let difference sinr (phase - flash-phase)
+  adjust-period difference
+
+
+;;   if not flashing? [ 
+;;     ifelse resting? 
+;;       [ adjust-period see-flash-adjustment ]
+;;       [ adjust-period (-1 * see-flash-adjustment) ]
+;;   ]
+end
+
+to-report phase-increment
+  report phase-velocity / period
 end
 
 to phase-step
-  set phase (phase + phase-velocity)
-  if phase > period [ 
-    set phase (phase mod period)
+  set phase (phase + phase-increment)
+  if phase > two-pi [ 
+    set phase (phase mod two-pi)
     flash
   ]
 end
 
 to-report phase-ratio
-  report phase / period
+  report phase / two-pi
 end
 
 to-report flashing?
@@ -62,14 +94,6 @@ end
 to find-color
   if color = flashing-color and not flashing? [ 
     set color resting-color
-  ]
-end
-
-to see-flash
-  if not flashing? [ 
-    ifelse resting? 
-      [ adjust-period see-flash-adjustment ]
-      [ adjust-period (-1 * see-flash-adjustment) ]
   ]
 end
 
@@ -88,7 +112,7 @@ to setup-oscillators
   ask oscillators [
     setxy random-xcor random-ycor
     set period random-period 
-    set phase random-float period
+    set phase random-float two-pi
     ifelse flashing? [ set color flashing-color ] [ set color resting-color ]
   ]
 end
@@ -185,7 +209,7 @@ ticks
 CC-WINDOW
 5
 533
-1212
+1235
 628
 Command Center
 0
@@ -231,7 +255,7 @@ phase-velocity
 phase-velocity
 0
 10
-0.1
+1.19
 0.01
 1
 NIL
@@ -319,6 +343,39 @@ MONITOR
 192
 NIL
 [ period ] of min-one-of oscillators [ period ]
+17
+1
+11
+
+MONITOR
+907
+393
+1159
+438
+NIL
+[ phase ] of oscillators with [ who = 1 ]
+17
+1
+11
+
+MONITOR
+907
+338
+1159
+383
+NIL
+[ period ] of oscillators with [ who = 1 ]
+17
+1
+11
+
+MONITOR
+908
+447
+1226
+492
+NIL
+[ phase-increment ] of oscillators with [ who = 1 ]
 17
 1
 11
