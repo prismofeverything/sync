@@ -1,6 +1,6 @@
 extensions [ array table sound ]
 
-globals [ two-pi pi-over-two over-pi over-half oscillator-count rest-ratio flashing-color resting-color ]
+globals [ two-pi pi-over-two over-pi over-half one-over-sqrt-two-pi oscillator-count rest-ratio flashing-color resting-color ]
 breed [ oscillators oscillator ]
 oscillators-own [ period phase flashing ]
 
@@ -11,18 +11,27 @@ to initialize-variables
   set pi-over-two pi * 0.5
   set over-pi 1.0 / pi
   set over-half 1.0 / 180
+  set one-over-sqrt-two-pi 1.0 / (sqrt two-pi)
   set oscillator-count 111
   set rest-ratio 0.5
   set flashing-color 45
   set resting-color 1
 end
 
+to-report normal-distribution [ x ]
+  report one-over-sqrt-two-pi * (e ^ (x * x * -0.5))
+end
+
+to-report bell-transform [ center scale value ]
+  report (normal-distribution ((value - center) / scale)) 
+end
+
 to-report to-degrees [ theta ]
-  report (theta * over-pi * 180)
+  report theta * over-pi * 180 mod 360
 end
 
 to-report to-radians [ theta ]
-  report (theta * pi * over-half)
+  report theta * pi * over-half
 end
 
 to-report orient-theta [ theta ]
@@ -51,7 +60,8 @@ to-report atanr [ x y ]
 end
 
 to-report random-period
-  report (random-float 100) + 10
+  ;; somewhere between 90 and 110
+  report (random-float 10) + 90
 end
 
 to-report number-flashing
