@@ -102,26 +102,31 @@ end
 
 to react-to-surrounding-flashes
   let neighbor-count count other oscillators in-radius sight-radius
-  ifelse surrounding-flashes > 0 [
-    let adjustment-factor (neighbor-count / surrounding-flashes) ^ 0.01
-    if adjustment-factor > 0 [ 
-      set period period * adjustment-factor 
-    ]
+  if surrounding-flashes > 0 [
+    let adjustment-factor (neighbor-count / surrounding-flashes) ^ adjustment-power
+    set period period * adjustment-factor 
     set surrounding-flashes 0
-  ] [
-    if neighbor-count > 0 [
-      set period period * 1.1
-    ]
-  ]
+  ] 
+end
+
+to-report neighbor-flash-difference
+  let neighbor-count count other oscillators in-radius sight-radius
+  report neighbor-count - ((surrounding-flashes * pi * 2) / phase)
+end
+
+to-report neighbor-flash-ratio
+  let neighbor-count count other oscillators in-radius sight-radius
+  report neighbor-count / surrounding-flashes
 end
 
 to flash
   set color flashing-color
-;;  tune-phase
 ;;  draw-circle flashing-color
 
   ;; return to center for calculations based on location
   setxy center-x center-y
+
+;;  tune-phase
   react-to-surrounding-flashes
   ask other oscillators in-radius sight-radius [ see-flash ]
 
@@ -148,7 +153,9 @@ to see-flash
 end
 
 to-report phase-increment
-  report phase-velocity / period
+  ifelse period = 0 [ 
+    report 0 ]
+  [ report phase-velocity / period ]
 end
 
 to phase-step
@@ -180,6 +187,9 @@ end
 to cycle
   phase-step
   find-color
+  
+  
+  
 ;;  tune-phase
 ;;  draw-circle    
 
@@ -241,7 +251,12 @@ to go
   cycle-oscillators
   set-current-plot "flashing together"
   plot number-flashing
-  set-current-plot "Period"
+  set-current-plot "min/max period"
+  set-current-plot-pen "min period"
+  plot min [ period ] of oscillators
+  set-current-plot-pen "max period"
+  plot max [ period ] of oscillators
+  set-current-plot "period"
   histogram [ period ] of oscillators
 end
 
@@ -434,7 +449,7 @@ MONITOR
 393
 1159
 438
-NIL
+sample phase
 [ phase ] of oscillators with [ who = 1 ]
 17
 1
@@ -445,7 +460,7 @@ MONITOR
 338
 1159
 383
-NIL
+sample period
 [ period ] of oscillators with [ who = 1 ]
 17
 1
@@ -456,7 +471,7 @@ MONITOR
 447
 1226
 492
-NIL
+sample phase-increment
 [ phase-increment ] of oscillators with [ who = 1 ]
 17
 1
@@ -484,7 +499,7 @@ PLOT
 518
 1102
 668
-Number of Neighbors
+min/max period
 NIL
 NIL
 0.0
@@ -496,13 +511,15 @@ false
 PENS
 "default" 1.0 0 -16777216 true
 "yellow" 1.0 1 -10899396 true
+"min period" 1.0 0 -11033397 true
+"max period" 1.0 0 -2674135 true
 
 PLOT
 1122
 518
 1322
 668
-Period
+period
 NIL
 NIL
 0.0
@@ -524,6 +541,47 @@ highest-simultaneous-flashing
 17
 1
 11
+
+SLIDER
+41
+228
+213
+261
+adjustment-power
+adjustment-power
+0
+2
+0.46
+0.01
+1
+NIL
+HORIZONTAL
+
+MONITOR
+1171
+338
+1310
+383
+surrounding flashes
+[ surrounding-flashes ] of oscillators with [ who = 1 ]
+17
+1
+11
+
+SLIDER
+11
+454
+332
+487
+neighbor-flash-offset
+neighbor-flash-offset
+-10
+10
+-2
+0.1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 WHAT IS IT?
