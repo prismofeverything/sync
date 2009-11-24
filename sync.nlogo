@@ -1,8 +1,8 @@
 extensions [ array table sound ]
 
-globals [ two-pi pi-over-two over-pi over-half one-over-sqrt-two-pi oscillator-count rest-ratio flashing-color resting-color ]
+globals [ two-pi pi-over-two over-pi over-half one-over-sqrt-two-pi oscillator-count rest-ratio flashing-color resting-color highest-simultaneous-flashing flash-ratio ]
 breed [ oscillators oscillator ]
-oscillators-own [ period phase flashing ]
+oscillators-own [ period phase center-x center-y sight-radius flashing surrounding-flashes ]
 
 ;; sliders [ phase-velocity flash-ratio sight-radius satisfaction-threshhold see-flash-adjustment flash-alone-adjustment ]
 
@@ -16,6 +16,8 @@ to initialize-variables
   set rest-ratio 0.5
   set flashing-color 45
   set resting-color 1
+  set flash-ratio 0.2
+  set highest-simultaneous-flashing 0
 end
 
 to-report normal-distribution [ x ]
@@ -60,12 +62,17 @@ to-report atanr [ x y ]
 end
 
 to-report random-period
-  ;; somewhere between 90 and 110
-  report (random-float 10) + 90
+  ;; somewhere between 50 and 100
+  report (random-float 50) + 50
 end
 
 to-report number-flashing
-  report count oscillators with [ flashing? ]
+  let number count oscillators with [ flashing? ]
+  if number > highest-simultaneous-flashing [
+    set highest-simultaneous-flashing number
+  ]
+
+  report number
 end
 
 to adjust-period [ adjustment ]
@@ -93,16 +100,51 @@ to tune-phase
   adjust-period adjustment * flash-alone-adjustment
 end
 
-to flash
-  set color flashing-color
-;;   tune-phase
-
-;;   ask other oscillators in-radius sight-radius [ see-flash self-phase ]
+to react-to-surrounding-flashes
+  let neighbor-count count other oscillators in-radius sight-radius
+  ifelse surrounding-flashes > 0 [
+    let adjustment-factor (neighbor-count / surrounding-flashes) ^ 0.01
+    if adjustment-factor > 0 [ 
+      set period period * adjustment-factor 
+    ]
+    set surrounding-flashes 0
+  ] [
+    if neighbor-count > 0 [
+      set period period * 1.1
+    ]
+  ]
 end
 
-to see-flash [ flash-phase ]
-  let difference sinr (phase - flash-phase)
-  adjust-period difference
+to flash
+  set color flashing-color
+;;  tune-phase
+;;  draw-circle flashing-color
+
+  ;; return to center for calculations based on location
+  setxy center-x center-y
+  react-to-surrounding-flashes
+  ask other oscillators in-radius sight-radius [ see-flash ]
+
+  ;; return to circle
+  set-circle
+end
+
+to draw-circle [ radius-color ]
+  ;; save old values
+  let precolor color
+  let presize size
+  set color radius-color
+  set size 2 * sight-radius
+
+  stamp 
+
+  ;; restore values
+  set color precolor
+  set size presize
+end
+
+to see-flash
+  set surrounding-flashes surrounding-flashes + 1
 end
 
 to-report phase-increment
@@ -138,7 +180,10 @@ end
 to cycle
   phase-step
   find-color
-  tune-phase
+;;  tune-phase
+;;  draw-circle    
+
+  set-circle
 
   if xcor = mouse-xcor and ycor = mouse-ycor [
     show period
@@ -146,12 +191,36 @@ to cycle
   ]
 end
 
+to achieve-radius
+  while [ count other oscillators in-radius sight-radius < 5 ] [
+    set sight-radius sight-radius + 1
+  ]
+end
+
+to set-center [ x y ]
+  set center-x x
+  set center-y y
+end
+
+to set-circle
+  set xcor center-x + ((cosr phase) * sight-radius)
+  set ycor center-y + ((sinr phase) * sight-radius)
+end
+
 to setup-oscillators
   create-oscillators oscillator-count
   ask oscillators [
-    setxy random-xcor random-ycor
+    set-center random-xcor random-ycor
+    setxy center-x center-y
     set period random-period 
     set phase random-float two-pi
+    set surrounding-flashes 0
+    set sight-radius 1
+
+    achieve-radius
+
+    set-circle
+    set shape "circle"
     ifelse flashing? [ set color flashing-color ] [ set color resting-color ]
   ]
 end
@@ -170,7 +239,10 @@ end
 
 to go
   cycle-oscillators
+  set-current-plot "flashing together"
   plot number-flashing
+  set-current-plot "Period"
+  histogram [ period ] of oscillators
 end
 
 
@@ -248,9 +320,9 @@ ticks
 
 CC-WINDOW
 5
-533
-1238
-628
+682
+1331
+777
 Command Center
 0
 
@@ -302,36 +374,6 @@ NIL
 HORIZONTAL
 
 SLIDER
-24
-220
-259
-253
-flash-ratio
-flash-ratio
-0
-1
-0.2
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-25
-263
-259
-296
-sight-radius
-sight-radius
-0
-40
-3
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
 25
 307
 259
@@ -340,7 +382,7 @@ satisfaction-threshhold
 satisfaction-threshhold
 0
 1
-0.5
+0.75
 0.01
 1
 NIL
@@ -355,7 +397,7 @@ see-flash-adjustment
 see-flash-adjustment
 -1
 1
--0.1
+0.57
 0.01
 1
 NIL
@@ -370,7 +412,7 @@ flash-alone-adjustment
 flash-alone-adjustment
 -1
 1
-0.01
+-0.28
 0.01
 1
 NIL
@@ -436,6 +478,52 @@ true
 false
 PENS
 "default" 1.0 0 -16777216 true
+
+PLOT
+902
+518
+1102
+668
+Number of Neighbors
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+PENS
+"default" 1.0 0 -16777216 true
+"yellow" 1.0 1 -10899396 true
+
+PLOT
+1122
+518
+1322
+668
+Period
+NIL
+NIL
+0.0
+150.0
+0.0
+22.0
+true
+false
+PENS
+"default" 1.0 1 -7500403 true
+
+MONITOR
+521
+553
+801
+598
+Highest number yet to flash simultaneously
+highest-simultaneous-flashing
+17
+1
+11
 
 @#$#@#$#@
 WHAT IS IT?
