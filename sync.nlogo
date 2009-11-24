@@ -69,6 +69,7 @@ to-report number-flashing
 end
 
 to adjust-period [ adjustment ]
+  ;; ensure period remains larger than ten
   if adjustment > 0 or period > 10 [
     set period (period + adjustment)
   ]
