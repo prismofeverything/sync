@@ -1,22 +1,30 @@
 extensions [ array table sound ]
 
-globals [ two-pi pi-over-two over-pi over-half one-over-sqrt-two-pi oscillator-count rest-ratio flashing-color resting-color highest-simultaneous-flashing flash-ratio ]
+globals [ two-pi pi-over-two over-pi over-half one-over-sqrt-two-pi oscillator-count rest-ratio flashing-color resting-color highest-simultaneous-flashing flash-ratio minimum-neighbors ]
 breed [ oscillators oscillator ]
 oscillators-own [ period phase center-x center-y sight-radius flashing surrounding-flashes ]
 
 ;; sliders [ phase-velocity flash-ratio sight-radius satisfaction-threshhold see-flash-adjustment flash-alone-adjustment ]
 
 to initialize-variables
+  ;; constants
   set two-pi 2 * pi
   set pi-over-two pi * 0.5
   set over-pi 1.0 / pi
   set over-half 1.0 / 180
   set one-over-sqrt-two-pi 1.0 / (sqrt two-pi)
-  set oscillator-count 111
+
+  ;; parameters
+  set oscillator-count 10
+  set minimum-neighbors 1
   set rest-ratio 0.5
+  set flash-ratio 0.2
+
+  ;; colors
   set flashing-color 45
   set resting-color 1
-  set flash-ratio 0.2
+
+  ;; keeping track
   set highest-simultaneous-flashing 0
 end
 
@@ -102,11 +110,12 @@ end
 
 to react-to-surrounding-flashes
   let neighbor-count count other oscillators in-radius sight-radius
-  if surrounding-flashes > 0 [
-    let adjustment-factor (neighbor-count / surrounding-flashes) ^ adjustment-power
-    set period period * adjustment-factor 
-    set surrounding-flashes 0
-  ] 
+  ifelse surrounding-flashes > neighbor-count [
+    set period period + adjustment-power
+  ] [
+    set period period - adjustment-power
+  ]
+  set surrounding-flashes 0
 end
 
 to-report neighbor-flash-difference
@@ -202,7 +211,7 @@ to cycle
 end
 
 to achieve-radius
-  while [ count other oscillators in-radius sight-radius < 5 ] [
+  while [ count other oscillators in-radius sight-radius < minimum-neighbors ] [
     set sight-radius sight-radius + 1
   ]
 end
@@ -579,6 +588,21 @@ neighbor-flash-offset
 10
 -2
 0.1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+52
+529
+237
+562
+neighbor-threshhold
+neighbor-threshhold
+0
+30
+5
+1
 1
 NIL
 HORIZONTAL
