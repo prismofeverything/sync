@@ -33,18 +33,30 @@ to-report spin-wheel
     set index index + 1
   ]
 
-  report one-of nodes with [ who = array:item keys index ]
+  if index = array:length keys [ set index array:length keys - 1 ]
+  report node array:item keys index
+end
+
+to find-and-join
+  let target spin-wheel
+
+  if not in-link-neighbor? target and not (target = self) [
+    create-link-from target
+    add-to-wheel [ who ] of target 1
+    add-to-wheel who 1
+  ]
 end
 
 to add-node-to-network
   create-nodes 1 [
-    if count other nodes > 0 [
-      let target spin-wheel
-      create-link-from target
-      add-to-wheel [ who ] of target 1
-    ] 
+    set color 5
+    set shape "circle"
 
-    add-to-wheel who 1
+    ifelse count other nodes > 0 [
+      repeat initial-links [ find-and-join ]
+    ] [
+      add-to-wheel who 1
+    ]
   ]
 end
 
@@ -55,10 +67,9 @@ to build-network
 end
 
 to setup
-  set-default-shape nodes "circle"
   setup-wheel
   build-network
-  repeat 100 [ layout-spring nodes links 0.2 5 1 ]
+  repeat 100 [ layout-spring nodes links 0.2 13 1 ]
 end
 
 
@@ -174,6 +185,21 @@ number-of-nodes
 0
 200
 50
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+9
+191
+181
+224
+initial-links
+initial-links
+0
+20
+3
 1
 1
 NIL
