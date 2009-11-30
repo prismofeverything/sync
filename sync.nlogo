@@ -1,6 +1,6 @@
 extensions [ array table sound ]
 
-globals [ two-pi pi-over-two over-pi over-half one-over-sqrt-two-pi oscillator-count rest-ratio flashing-color resting-color highest-simultaneous-flashing flash-ratio minimum-neighbors ]
+globals [ two-pi pi-over-two over-pi over-half one-over-sqrt-two-pi rest-ratio flashing-color resting-color highest-simultaneous-flashing flash-ratio minimum-neighbors ]
 breed [ oscillators oscillator ]
 oscillators-own [ period phase center-x center-y sight-radius flashing surrounding-flashes ]
 
@@ -15,8 +15,7 @@ to initialize-variables
   set one-over-sqrt-two-pi 1.0 / (sqrt two-pi)
 
   ;; parameters
-  set oscillator-count 10
-  set minimum-neighbors 1
+  set minimum-neighbors 5
   set rest-ratio 0.5
   set flash-ratio 0.2
 
@@ -71,7 +70,7 @@ end
 
 to-report random-period
   ;; somewhere between 50 and 100
-  report (random-float 50) + 50
+  report (random-float 100) + 100
 end
 
 to-report number-flashing
@@ -110,11 +109,15 @@ end
 
 to react-to-surrounding-flashes
   let neighbor-count count other oscillators in-radius sight-radius
-  ifelse surrounding-flashes > neighbor-count [
-    set period period + adjustment-power
+  let difference surrounding-flashes - neighbor-threshhold
+  let factor adjustment-power * (1 / (2 ^ difference) + 1)
+
+  ifelse surrounding-flashes > neighbor-threshhold [
+    set period period + factor
   ] [
-    set period period - adjustment-power
+    set period period - factor
   ]
+
   set surrounding-flashes 0
 end
 
@@ -130,17 +133,17 @@ end
 
 to flash
   set color flashing-color
-;;  draw-circle flashing-color
+  ;; draw-circle flashing-color
 
   ;; return to center for calculations based on location
-  setxy center-x center-y
+  ;; setxy center-x center-y
 
-;;  tune-phase
+  ;; tune-phase
   react-to-surrounding-flashes
   ask other oscillators in-radius sight-radius [ see-flash ]
 
   ;; return to circle
-  set-circle
+  ;; set-circle
 end
 
 to draw-circle [ radius-color ]
@@ -197,17 +200,15 @@ to cycle
   phase-step
   find-color
   
+  ;; tune-phase
+  ;; draw-circle    
   
+  ;; set-circle
   
-;;  tune-phase
-;;  draw-circle    
-
-  set-circle
-
-  if xcor = mouse-xcor and ycor = mouse-ycor [
-    show period
-    show phase
-  ]
+  ;; if xcor = mouse-xcor and ycor = mouse-ycor [
+  ;;   show period
+  ;;   show phase
+  ;; ]
 end
 
 to achieve-radius
@@ -238,7 +239,7 @@ to setup-oscillators
 
     achieve-radius
 
-    set-circle
+;;    set-circle
     set shape "circle"
     ifelse flashing? [ set color flashing-color ] [ set color resting-color ]
   ]
@@ -532,7 +533,7 @@ period
 NIL
 NIL
 0.0
-150.0
+1000.0
 0.0
 22.0
 true
@@ -559,8 +560,8 @@ SLIDER
 adjustment-power
 adjustment-power
 0
+10
 2
-0.46
 0.01
 1
 NIL
@@ -602,6 +603,21 @@ neighbor-threshhold
 0
 30
 5
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+40
+265
+212
+298
+oscillator-count
+oscillator-count
+0
+200
+77
 1
 1
 NIL
