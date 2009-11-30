@@ -100,17 +100,17 @@ to tune-phase
     set y-component (y-component + sinr phase-difference)
   ]
 
-  let magnitude (x-component ^ 2) + (y-component ^ 2)
+  let magnitude sqrt ((x-component ^ 2) + (y-component ^ 2))
   let theta atanr x-component y-component
-  let adjustment (orient-theta (phase - theta)) * magnitude
+  let adjustment (orient-theta (theta - phase)) * magnitude
 
-  adjust-period adjustment * flash-alone-adjustment
+  adjust-period adjustment * flash-alone-adjustment * 0.01
 end
 
 to react-to-surrounding-flashes
   let neighbor-count count other oscillators in-radius sight-radius
   let difference surrounding-flashes - neighbor-threshhold
-  let factor adjustment-power * (1 / (2 ^ difference) + 1)
+  let factor adjustment-power * (1 / (2 ^ (difference + 1)) + 1)
 
   ifelse surrounding-flashes > neighbor-threshhold [
     set period period + factor
@@ -200,7 +200,7 @@ to cycle
   phase-step
   find-color
   
-  ;; tune-phase
+  tune-phase
   ;; draw-circle    
   
   ;; set-circle
@@ -437,7 +437,7 @@ flash-alone-adjustment
 flash-alone-adjustment
 -1
 1
--0.28
+0
 0.01
 1
 NIL
@@ -560,8 +560,8 @@ SLIDER
 adjustment-power
 adjustment-power
 0
-10
-2
+20
+3.44
 0.01
 1
 NIL
