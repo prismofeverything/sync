@@ -109,10 +109,14 @@ end
 
 to react-to-surrounding-flashes
   let neighbor-count count other oscillators in-radius sight-radius
-  let difference surrounding-flashes - neighbor-threshhold
-  let factor adjustment-power * (1 / (2 ^ (difference + 1)) + 1)
+  let difference neighbor-count - surrounding-flashes
 
-  ifelse surrounding-flashes > neighbor-threshhold [
+;;   set period period + difference
+
+  let factor adjustment-power
+;;   let factor adjustment-power * (1 / (2 ^ (difference + 1)) + 1)
+
+  ifelse neighbor-count > surrounding-flashes [
     set period period + factor
   ] [
     set period period - factor
