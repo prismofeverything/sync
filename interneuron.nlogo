@@ -1,16 +1,18 @@
 extensions [ array table sound ]
 
-globals [ wheel wheel-portion color-bases inactive-color active-color ]
+globals [ inputs wheel wheel-portion color-bases inactive-color active-color input-color ]
 
 breed [ nodes node ]
-nodes-own [ level threshhold sign ]
+nodes-own [ active? level threshhold sign ]
 links-own [ strength ]
 
 
 to assign-globals
   set color-bases array:from-list [ 20 50 90 130 ]
-  set active-color 7
+  set active-color 8
   set inactive-color 3
+  set input-color 0
+  set inputs []
 end
 
 to-report random-color
@@ -76,6 +78,7 @@ to add-node-to-network
       add-to-wheel who 1
     ]
 
+    set active? false
     set shape "circle"
     set size (count my-in-links + count my-out-links) / 3
   ]
@@ -88,22 +91,74 @@ to set-color [ chosen-color ]
   ]
 end
 
+to activate
+  if not active? [
+    set active? true
+    set-color (color - inactive-color) + active-color
+  ]
+end
+
+to inactivate
+  if active? [
+    set active? false
+    set-color (color - active-color) + inactive-color
+  ]
+end
+
+to random-input-activation [ heat ]
+  foreach inputs [
+    ifelse heat > random-float 1 [
+      ask ? [ activate ]
+    ] [
+      ask ? [ inactivate ]
+    ] 
+  ]
+end
+
 to build-network
   repeat number-of-nodes [ add-node-to-network ]
   ask nodes [ set-color random-color + inactive-color ]
 
   repeat 30 [ layout-spring nodes links 0.1 20 1 ]
 
-  let latitude 1
+  let latitude world-height * 0.13
   let len count nodes
+  let step (world-height * 0.81) / len
   let by-in-links sort-by [ [ count my-in-links ] of ?1 < [ count my-in-links ] of ?2 ] nodes 
   
   foreach by-in-links [
-    ask ? [
-      set ycor ((latitude / world-height) * latitude) - (world-height * 0.5)
-    ]
-    set latitude latitude + 1
+    ask ? [ set ycor latitude - (world-height * 0.5) ]
+    set latitude latitude + step
   ]
+
+  repeat number-of-inputs [ 
+    create-nodes 1 [
+      repeat initial-links [ 
+        let choice item random number-of-inputs by-in-links
+        create-link-to choice
+      ]
+
+      set inputs lput self inputs
+      set ycor (world-height * -0.444)
+      set-color input-color + inactive-color
+      set shape "circle"
+      set size 1.3
+    ]
+  ]
+
+  let longitude world-width * 0.09
+  set step (world-width * 0.91) / number-of-inputs
+
+  foreach inputs [
+    ask ? [ 
+      set xcor longitude - (world-width * 0.5) 
+      set active? false
+    ]
+
+    set longitude longitude + step
+  ]
+
+  random-input-activation input-heat
 end
 
 to setup
@@ -114,7 +169,9 @@ to setup
   build-network
 end
 
-
+to go
+  
+end
 
 
 
@@ -243,6 +300,36 @@ initial-links
 20
 3
 1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+7
+241
+179
+274
+number-of-inputs
+number-of-inputs
+0
+100
+11
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+8
+290
+180
+323
+input-heat
+input-heat
+0
+1
+0.3
+0.01
 1
 NIL
 HORIZONTAL
