@@ -116,7 +116,7 @@ to react-to-surrounding-flashes
   let factor adjustment-power
 ;;   let factor adjustment-power * (1 / (2 ^ (difference + 1)) + 1)
 
-  ifelse neighbor-count > surrounding-flashes [
+  ifelse neighbor-threshhold > surrounding-flashes [
     set period period + factor
   ] [
     set period period - factor
@@ -204,15 +204,7 @@ to cycle
   phase-step
   find-color
   
-  tune-phase
-  ;; draw-circle    
-  
-  ;; set-circle
-  
-  ;; if xcor = mouse-xcor and ycor = mouse-ycor [
-  ;;   show period
-  ;;   show phase
-  ;; ]
+  ;; tune-phase
 end
 
 to achieve-radius
@@ -243,7 +235,6 @@ to setup-oscillators
 
     achieve-radius
 
-;;    set-circle
     set shape "circle"
     ifelse flashing? [ set color flashing-color ] [ set color resting-color ]
   ]
