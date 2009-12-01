@@ -228,9 +228,16 @@ to setup
   build-network
 end
 
+to-report number-active
+  report count nodes with [ active? ]
+end
+
 to go
   ask nodes [ send-activation ]  
   ask nodes [ receive-activation ]  
+
+  set-current-plot "active"
+  histogram [ level ] of nodes
 end
 
 
@@ -313,7 +320,7 @@ ticks
 CC-WINDOW
 5
 484
-653
+897
 579
 Command Center
 0
@@ -402,6 +409,39 @@ BUTTON
 NIL
 go
 T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+
+PLOT
+688
+75
+888
+225
+active
+level
+simultaneous
+0.0
+1.0
+0.0
+50.0
+true
+false
+PENS
+"default" 0.1 1 -2674135 true
+
+BUTTON
+40
+92
+152
+125
+step
+go
+NIL
 1
 T
 OBSERVER
