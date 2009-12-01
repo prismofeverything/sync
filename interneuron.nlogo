@@ -153,6 +153,8 @@ to build-network
       set shape "circle"
       set size 1.3
       set input? true
+      set threshhold 1
+      set sign 1
     ]
   ]
 
