@@ -1,11 +1,21 @@
 extensions [ array table sound ]
 
-globals [ wheel wheel-portion ]
+globals [ wheel wheel-portion color-bases inactive-color active-color ]
 
 breed [ nodes node ]
 nodes-own [ level threshhold sign ]
 links-own [ strength ]
 
+
+to assign-globals
+  set color-bases array:from-list [ 20 50 90 130 ]
+  set active-color 7
+  set inactive-color 3
+end
+
+to-report random-color
+  report array:item color-bases random array:length color-bases
+end
 
 to setup-wheel
   set wheel table:make
@@ -37,7 +47,7 @@ to-report spin-wheel
   report node array:item keys index
 end
 
-to find-and-join
+to find-and-join-from
   let target spin-wheel
 
   if not in-link-neighbor? target and not (target = self) [
@@ -47,29 +57,61 @@ to find-and-join
   ]
 end
 
+to find-and-join-to
+  let target spin-wheel
+
+  if not in-link-neighbor? target and not (target = self) [
+    create-link-to target
+    add-to-wheel [ who ] of target 1
+    add-to-wheel who 1
+  ]
+end
+
 to add-node-to-network
   create-nodes 1 [
-    set color 5
-    set shape "circle"
-
     ifelse count other nodes > 0 [
-      repeat initial-links [ find-and-join ]
+      repeat initial-links [ find-and-join-from ]
+      repeat initial-links [ find-and-join-to ]
     ] [
       add-to-wheel who 1
     ]
+
+    set shape "circle"
+    set size (count my-in-links + count my-out-links) / 3
+  ]
+end
+
+to set-color [ chosen-color ]
+  set color chosen-color
+  ask my-out-links [
+    set color chosen-color
   ]
 end
 
 to build-network
-  repeat number-of-nodes [
-    add-node-to-network
+  repeat number-of-nodes [ add-node-to-network ]
+  ask nodes [ set-color random-color + inactive-color ]
+
+  repeat 30 [ layout-spring nodes links 0.1 20 1 ]
+
+  let latitude 1
+  let len count nodes
+  let by-in-links sort-by [ [ count my-in-links ] of ?1 < [ count my-in-links ] of ?2 ] nodes 
+  
+  foreach by-in-links [
+    ask ? [
+      set ycor ((latitude / world-height) * latitude) - (world-height * 0.5)
+    ]
+    set latitude latitude + 1
   ]
 end
 
 to setup
+  ask nodes [ die ] 
+
+  assign-globals
   setup-wheel
   build-network
-  repeat 100 [ layout-spring nodes links 0.2 13 1 ]
 end
 
 
