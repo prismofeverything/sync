@@ -1,18 +1,19 @@
 extensions [ array table sound ]
 
-globals [ inputs wheel wheel-portion color-bases inactive-color active-color input-color ]
+globals [ inputs wheel wheel-portion color-bases inactive-color active-color input-color input-step ]
 
 breed [ nodes node ]
-nodes-own [ active? level threshhold sign ]
-links-own [ strength ]
+nodes-own [ active? level threshhold sign input? ]
+links-own [ strength link-active? ]
 
 
 to assign-globals
   set color-bases array:from-list [ 20 50 90 130 ]
-  set active-color 8
+  set active-color 7
   set inactive-color 3
   set input-color 0
   set inputs []
+  set input-step 0.21
 end
 
 to-report random-color
@@ -81,6 +82,11 @@ to add-node-to-network
     set active? false
     set shape "circle"
     set size (count my-in-links + count my-out-links) / 3
+
+    set level 0
+    set threshhold 1
+    set sign 1
+    set input? false
   ]
 end
 
@@ -98,7 +104,7 @@ to activate
   ]
 end
 
-to inactivate
+to deactivate
   if active? [
     set active? false
     set-color (color - active-color) + inactive-color
@@ -108,17 +114,19 @@ end
 to random-input-activation [ heat ]
   foreach inputs [
     ifelse heat > random-float 1 [
-      ask ? [ activate ]
+      ask ? [ activate set level 2]
     ] [
-      ask ? [ inactivate ]
+      ask ? [ deactivate ]
     ] 
   ]
 end
 
 to build-network
+  ;; build nodes
   repeat number-of-nodes [ add-node-to-network ]
   ask nodes [ set-color random-color + inactive-color ]
 
+  ;; layout
   repeat 30 [ layout-spring nodes links 0.1 20 1 ]
 
   let latitude world-height * 0.13
@@ -131,6 +139,7 @@ to build-network
     set latitude latitude + step
   ]
 
+  ;; build input layer
   repeat number-of-inputs [ 
     create-nodes 1 [
       repeat initial-links [ 
@@ -143,9 +152,11 @@ to build-network
       set-color input-color + inactive-color
       set shape "circle"
       set size 1.3
+      set input? true
     ]
   ]
 
+  ;; layout inputs
   let longitude world-width * 0.09
   set step (world-width * 0.91) / number-of-inputs
 
@@ -158,7 +169,53 @@ to build-network
     set longitude longitude + step
   ]
 
+  ;; set up basic link attributes
+  ask nodes [
+    ask my-out-links [
+      set link-active? false
+      set strength 1
+    ]
+  ]
+
+  ;; activate input layer
   random-input-activation input-heat
+end
+
+to link-activate 
+  set link-active? true
+end
+
+to link-deactivate
+  set link-active? false
+end
+
+to send-activation
+  if active? [
+    ask my-out-links [
+      link-activate
+    ]
+  ]
+end
+
+to receive-activation
+  ifelse input? [
+    set level level + input-step
+  ] [
+    let total count my-in-links + 1
+    let active my-in-links with [ link-active? ]
+    let total-activation sum map [ [ strength ] of ? ] sort active
+    let ratio total-activation / total
+    set level level + ratio
+  
+    ask active [ link-deactivate ]
+  ]
+
+  ifelse level > threshhold [
+    activate
+    set level 0
+  ] [
+    deactivate
+  ]
 end
 
 to setup
@@ -170,7 +227,8 @@ to setup
 end
 
 to go
-  
+  ask nodes [ send-activation ]  
+  ask nodes [ receive-activation ]  
 end
 
 
@@ -259,10 +317,10 @@ Command Center
 0
 
 BUTTON
-68
-73
-134
-106
+25
+50
+91
+83
 NIL
 setup
 NIL
@@ -333,6 +391,22 @@ input-heat
 1
 NIL
 HORIZONTAL
+
+BUTTON
+106
+50
+169
+83
+NIL
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
 
 @#$#@#$#@
 WHAT IS IT?
